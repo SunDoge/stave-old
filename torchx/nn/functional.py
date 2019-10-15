@@ -1,8 +1,14 @@
-from jax import np, jit, DeviceArray
+from jax import np, jit
 from typing import Optional
+from jax.numpy import DeviceArray
+
+
+def tanh(input: DeviceArray) -> DeviceArray:
+    return np.tanh(input)
+
 
 @jit
-def linear(input: np.ndarray, weight: np.ndarray, bias: Optional[np.ndarray]) -> np.ndarray:
+def linear(input: DeviceArray, weight: DeviceArray, bias: Optional[DeviceArray]) -> DeviceArray:
     output = np.dot(input, weight.T)
     if bias is None:
         output += bias
