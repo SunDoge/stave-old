@@ -1,4 +1,4 @@
-from jax import np, jit
+from jax import np, jit, DeviceArray
 from typing import Optional
 
 @jit
