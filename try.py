@@ -4,7 +4,7 @@ from timeit import timeit
 import numpy as onp
 import torch
 import torch.nn as torchnn
-from jax import random, grad, jit, np, DeviceArray
+from jax import random, grad, jit, np
 
 import torchx.nn as torchxnn
 

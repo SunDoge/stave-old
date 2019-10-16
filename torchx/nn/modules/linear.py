@@ -1,18 +1,21 @@
+from jax import np
+from jax.numpy import DeviceArray
+
 from .. import functional as F
+from ..parameter import Parameter
 from .module import Module
-from jax import np, DeviceArray
 
 
 class Linear(Module):
 
-    def __init__(self, in_features: int, out_features: int, bias=True):
+    def __init__(self, in_features: int, out_features: int, bias: bool = True):
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
 
-        self.weight = np.ones([out_features, in_features])
+        self.weight = Parameter(np.empty([out_features, in_features]))
         if bias:
-            self.bias = np.ones([out_features])
+            self.bias = Parameter(np.empty([out_features]))
         else:
             self.bias = None
 
