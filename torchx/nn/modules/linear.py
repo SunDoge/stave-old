@@ -1,5 +1,6 @@
-from jax import np
+import jax
 from jax.numpy import DeviceArray
+import numpy as np
 
 from .. import functional as F
 from ..parameter import Parameter

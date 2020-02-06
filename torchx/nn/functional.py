@@ -11,6 +11,6 @@ def tanh(input: DeviceArray) -> DeviceArray:
 
 def linear(input: DeviceArray, weight: DeviceArray, bias: Optional[DeviceArray]) -> DeviceArray:
     output = np.dot(input, weight.T)
-    if bias is None:
+    if bias is not None:
         output += bias
     return output
