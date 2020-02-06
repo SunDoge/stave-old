@@ -35,6 +35,22 @@ class Module:
     def add_module(self, name: str, module: 'Module'):
         pass
 
+    def __getattr__(self, name: str):
+        if '_parameters' in self.__dict__:
+            _parameters = self.__dict__['_parameters']
+            if name in _parameters:
+                return _parameters[name]
+        if '_buffers' in self.__dict__:
+            _buffers = self.__dict__['_buffers']
+            if name in _buffers:
+                return _buffers[name]
+        if '_modules' in self.__dict__:
+            modules = self.__dict__['_modules']
+            if name in modules:
+                return modules[name]
+        raise AttributeError("'{}' object has no attribute '{}'".format(
+            type(self).__name__, name))
+
 
 def differentiable(cls: Module):
     @functools.wraps(cls)

@@ -16,12 +16,12 @@ linear1 = torchxnn.Linear(16, 1)
 linear2 = torchnn.Linear(16, 1)
 
 @jit
-def step(x):
-    return np.sum(linear1(x))
+def step(m, x):
+    return np.sum(m(x))
 
 y = linear1(x1)
 print(y)
-print(grad(step)(x1))
+print(jit(grad(step))(linear1, x1))
 
 y = linear2(x2)
 print(y)
