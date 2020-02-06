@@ -1,6 +1,7 @@
 import functools
 from jax.tree_util import register_pytree_node
 from collections import OrderedDict
+from jax import random as jrandom
 
 
 class Module:
@@ -50,6 +51,26 @@ class Module:
                 return modules[name]
         raise AttributeError("'{}' object has no attribute '{}'".format(
             type(self).__name__, name))
+
+    def reset_parameters(self, rng):
+        pass
+
+    def initialize_parameters(self, seed=42, recurse=True, rng=None):
+        if rng is None:
+            rng = jrandom.PRNGKey(seed)
+        self.reset_parameters(rng)
+
+        if recurse:
+            for module in self._modules.values():
+                rng, layer_rng = jrandom.split(rng)
+                module.initialize_parameters(seed=seed, recurse=recurse, rng=rng)
+
+    def __repr__(self):
+        """
+        TODO
+        :return:
+        """
+        return super().__repr__()
 
 
 def differentiable(cls: Module):
