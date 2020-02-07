@@ -12,14 +12,14 @@ class Model(nn.Module):
         self.out_features = out_features
         self.hidden_dim = hidden_dim
 
-    def reset_parameters(self, rng):
+    def reset_parameters(self, _rng):
         """
         不应该在这创建，后面再想想怎么处理
         :param rng:
         :return:
         """
-        self._modules['linear1'] = nn.Linear(self.in_features, self.hidden_dim)
-        self._modules['linear2'] = nn.Linear(self.hidden_dim, self.out_features, use_bias=False)
+        self.linear1 = nn.Linear(self.in_features, self.hidden_dim)
+        self.linear2 = nn.Linear(self.hidden_dim, self.out_features, use_bias=False)
 
     @jax.jit
     def forward(self, x):
@@ -31,7 +31,7 @@ class Model(nn.Module):
 rng = jrandom.PRNGKey(42)
 rng, key = jrandom.split(rng)
 m = Model(in_features=16)
-m.initialize_parameters(rng=rng)
+m.initialize(rng=rng)
 
 x = jrandom.uniform(key, (4, 16))
 y = m(x)
@@ -42,7 +42,7 @@ def loss(m, x):
     return m(x).sum()
 
 
-dloss = jax.jit(jax.grad(loss))
+dloss = jax.jit(jax.grad(loss), static_argnums=0)
 
 dw = dloss(m, x)
 print(dw)

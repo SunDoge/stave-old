@@ -13,7 +13,7 @@ x1 = random.normal(key, (4, 16))
 x2 = torch.from_numpy(onp.array(x1))
 
 linear1 = torchxnn.Linear(16, 1)
-linear1.initialize_parameters()
+linear1.initialize()
 
 linear2 = torchnn.Linear(16, 1)
 

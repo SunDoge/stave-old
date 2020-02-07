@@ -1,7 +1,22 @@
 import functools
-from jax.tree_util import register_pytree_node
 from collections import OrderedDict
+
 from jax import random as jrandom
+from jax.tree_util import register_pytree_node
+from ..parameter import Parameter
+from jax.interpreters.xla import DeviceArray
+
+
+def _addindent(s_, num_spaces):
+    s = s_.split('\n')
+    # don't do anything for single-line stuff
+    if len(s) == 1:
+        return s_
+    first = s.pop(0)
+    s = [(num_spaces * ' ') + line for line in s]
+    s = '\n'.join(s)
+    s = first + '\n' + s
+    return s
 
 
 class Module:
@@ -52,10 +67,54 @@ class Module:
         raise AttributeError("'{}' object has no attribute '{}'".format(
             type(self).__name__, name))
 
+    def __setattr__(self, name, value):
+        def remove_from(*dicts):
+            for d in dicts:
+                if name in d:
+                    del d[name]
+
+        params = self.__dict__.get('_parameters')
+        if isinstance(value, Parameter):
+            if params is None:
+                raise AttributeError(
+                    "cannot assign parameters before Module.__init__() call")
+            remove_from(self.__dict__, self._buffers, self._modules)
+            self.register_parameter(name, value)
+        elif params is not None and name in params:
+            if value is not None:
+                raise TypeError("cannot assign '{}' as parameter '{}' "
+                                "(torch.nn.Parameter or None expected)"
+                                .format(type(value), name))
+            self.register_parameter(name, value)
+        else:
+            modules = self.__dict__.get('_modules')
+            if isinstance(value, Module):
+                if modules is None:
+                    raise AttributeError(
+                        "cannot assign module before Module.__init__() call")
+                remove_from(self.__dict__, self._parameters, self._buffers)
+                modules[name] = value
+            elif modules is not None and name in modules:
+                if value is not None:
+                    raise TypeError("cannot assign '{}' as child module '{}' "
+                                    "(torch.nn.Module or None expected)"
+                                    .format(type(value), name))
+                modules[name] = value
+            else:
+                buffers = self.__dict__.get('_buffers')
+                if buffers is not None and name in buffers:
+                    if value is not None and not isinstance(value, DeviceArray):
+                        raise TypeError("cannot assign '{}' as buffer '{}' "
+                                        "(torch.Tensor or None expected)"
+                                        .format(type(value), name))
+                    buffers[name] = value
+                else:
+                    object.__setattr__(self, name, value)
+
     def reset_parameters(self, rng):
         pass
 
-    def initialize_parameters(self, seed=42, recurse=True, rng=None):
+    def initialize(self, seed=42, recurse=True, rng=None):
         if rng is None:
             rng = jrandom.PRNGKey(seed)
         self.reset_parameters(rng)
@@ -63,7 +122,7 @@ class Module:
         if recurse:
             for module in self._modules.values():
                 rng, layer_rng = jrandom.split(rng)
-                module.initialize_parameters(seed=seed, recurse=recurse, rng=rng)
+                module.initialize(seed=seed, recurse=recurse, rng=rng)
 
     def __repr__(self):
         """
