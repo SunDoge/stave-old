@@ -38,8 +38,18 @@ class Module:
     #
     #     self.training = True
 
-    def __post_init__(self):
-        self.training = True
+    def train(self, mode=True):
+        if hasattr(self, 'training'):
+            setattr(self, 'training', True)
+
+        for k, v in self.__annotations__.items():
+            if issubclass(v, Module):
+                getattr(self, k).train(mode=mode)
+
+        return self
+
+    def eval(self):
+        return self.train(mode=False)
 
     def forward(self, *args, **kwargs):
         raise NotImplementedError
@@ -154,6 +164,7 @@ class Module:
         """
         # return super().__repr__()
         return 'fuck'
+
 
 def differentiable(cls: Module, use_dataclass=True):
     # @functools.wraps(cls)
