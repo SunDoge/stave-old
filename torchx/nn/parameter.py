@@ -1,10 +1,11 @@
 from jax.numpy import DeviceArray
 
-from typing import Tuple
+from typing import Tuple, List, Union, Iterable, Optional
 from torch.nn import Linear
+from dataclasses import dataclass
 
 
+@dataclass
 class Parameter:
-    def __init__(self, shape, init_fn):
-        self.shape = shape
-        self.init_fn = init_fn
+    shape: Iterable[int]
+    data: Optional[DeviceArray] = None
