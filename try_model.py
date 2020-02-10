@@ -5,21 +5,22 @@ import jax
 
 @differentiable
 class Model(nn.Module):
+    # def __init__(self, in_features=16, out_features=2, hidden_dim=64):
+    #     super().__init__()
+    #     self.in_features = in_features
+    #     self.out_features = out_features
+    #     self.hidden_dim = hidden_dim
+    linear1: nn.Linear
+    linear2: nn.Linear
 
-    def __init__(self, in_features=16, out_features=2, hidden_dim=64):
-        super().__init__()
-        self.in_features = in_features
-        self.out_features = out_features
-        self.hidden_dim = hidden_dim
-
-    def reset_parameters(self, _rng):
-        """
-        不应该在这创建，后面再想想怎么处理
-        :param rng:
-        :return:
-        """
-        self.linear1 = nn.Linear(self.in_features, self.hidden_dim)
-        self.linear2 = nn.Linear(self.hidden_dim, self.out_features, use_bias=False)
+    @classmethod
+    def build(cls, in_features=16, out_features=2, hidden_dim=64):
+        linear1 = nn.Linear.build(in_features, hidden_dim)
+        linear2 = nn.Linear.build(hidden_dim, out_features, use_bias=False)
+        return cls(
+            linear1=linear1,
+            linear2=linear2
+        )
 
     @jax.jit
     def forward(self, x):
@@ -30,8 +31,10 @@ class Model(nn.Module):
 
 rng = jrandom.PRNGKey(42)
 rng, key = jrandom.split(rng)
-m = Model(in_features=16)
+m = Model.build(in_features=16)
 m.initialize(rng=rng)
+
+# print(m)
 
 x = jrandom.uniform(key, (4, 16))
 y = m(x)
