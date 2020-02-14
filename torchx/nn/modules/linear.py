@@ -48,8 +48,8 @@ class Linear(Module):
     out_features: int
     use_bias: bool
 
-    weight: Parameter
-    bias: Parameter
+    weight: differentiable
+    bias: differentiable
 
     def __call__(self, input: DeviceArray):
         return F.linear(input, self.weight, self.bias)
@@ -61,10 +61,10 @@ class Linear(Module):
             self.bias = jrandom.normal(k2, self.bias.shape)
 
     @classmethod
-    def build(cls, in_features: int, out_features: int, use_bias=True):
-        weight = Parameter([out_features, in_features])
+    def new(cls, in_features: int, out_features: int, use_bias=True):
+        weight = jnp.empty([out_features, in_features])
         if use_bias:
-            bias = Parameter([out_features])
+            bias = jnp.empty([out_features])
         else:
             bias = None
         return cls(
@@ -74,5 +74,3 @@ class Linear(Module):
             weight=weight,
             bias=bias
         )
-
-

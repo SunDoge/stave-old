@@ -1,7 +1,7 @@
 from torchx import nn, differentiable
 from jax import np as jnp, random as jrandom
 import jax
-
+from dataclasses import dataclass
 
 @differentiable
 class Model(nn.Module):
@@ -14,9 +14,9 @@ class Model(nn.Module):
     linear2: nn.Linear
 
     @classmethod
-    def build(cls, in_features=16, out_features=2, hidden_dim=64):
-        linear1 = nn.Linear.build(in_features, hidden_dim)
-        linear2 = nn.Linear.build(hidden_dim, out_features, use_bias=False)
+    def new(cls, in_features=16, out_features=2, hidden_dim=64):
+        linear1 = nn.Linear.new(in_features, hidden_dim)
+        linear2 = nn.Linear.new(hidden_dim, out_features, use_bias=False)
         return cls(
             linear1=linear1,
             linear2=linear2
@@ -31,7 +31,7 @@ class Model(nn.Module):
 
 rng = jrandom.PRNGKey(42)
 rng, key = jrandom.split(rng)
-m = Model.build(in_features=16)
+m = Model.new(in_features=16)
 m.initialize(rng=rng)
 
 # print(m)

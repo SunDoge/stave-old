@@ -6,8 +6,10 @@ from jax.tree_util import register_pytree_node
 from ..parameter import Parameter
 from jax.interpreters.xla import DeviceArray
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict, List, TypeVar, NewType, Union, Type
+import typing
 from torch import nn
+import inspect
 
 
 def _addindent(s_, num_spaces):
@@ -20,6 +22,18 @@ def _addindent(s_, num_spaces):
     s = '\n'.join(s)
     s = first + '\n' + s
     return s
+
+
+Differentiable = NewType('Differentiable', Union[DeviceArray, float])
+
+
+# Differentiable = Union[T]
+
+@dataclass
+class Fuck:
+    # a: Differentiable[int]
+    b: int
+    c: Type[int]
 
 
 class Module:
@@ -38,9 +52,16 @@ class Module:
     #
     #     self.training = True
 
+    def _train(self, mode=True):
+        """
+        If module has `training`, rewrite this method
+        :param mode:
+        :return:
+        """
+        pass
+
     def train(self, mode=True):
-        if hasattr(self, 'training'):
-            setattr(self, 'training', True)
+        self._train(mode=mode)
 
         for k, v in self.__annotations__.items():
             if issubclass(v, Module):
@@ -137,7 +158,7 @@ class Module:
         if recurse:
             # for module in self._modules.values():
             for k, v in self.__annotations__.items():
-                if issubclass(v, Module):
+                if inspect.isclass(v) and issubclass(v, Module):
                     rng, layer_rng = jrandom.split(rng)
                     getattr(self, k).initialize(seed=seed, recurse=recurse, rng=rng)
 
@@ -145,7 +166,7 @@ class Module:
         children = {}
         aux_data = {}
         for k, v in self.__annotations__.items():
-            if v is differentiable or issubclass(v, Module) or v is Parameter:
+            if v is differentiable or issubclass(v, Module):
                 children[k] = getattr(self, k)
             else:
                 aux_data[k] = getattr(self, k)
@@ -154,7 +175,7 @@ class Module:
         return children, aux_data
 
     @classmethod
-    def from_args(cls, *args, **kwargs):
+    def new(cls, *args, **kwargs):
         return cls()
 
     def __repr__(self):
