@@ -2,6 +2,8 @@
 
 A proof-of-concept deep learning library based on [JAX](https://github.com/google/jax).
 
+This project is inspired by [cgarciae/jax-differentiable](https://github.com/cgarciae/jax-differentiable).
+
 **Note: I'm not good at naming, so the name may change in the future. This project is POC and WIP, everything will change.**
 
 ## Concepts
