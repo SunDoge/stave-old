@@ -29,6 +29,7 @@ class Model(nn.Module):
         return x
 
 
+
 rng = jrandom.PRNGKey(42)
 rng, key = jrandom.split(rng)
 m = Model.new(in_features=16)
