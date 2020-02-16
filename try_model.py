@@ -49,3 +49,7 @@ dloss = jax.jit(jax.grad(loss), static_argnums=0)
 
 dw = dloss(m, x)
 print(dw)
+
+flat, tree = jax.tree_flatten(dw)
+dw1 = jax.tree_unflatten(tree, flat)
+print(dw1)
