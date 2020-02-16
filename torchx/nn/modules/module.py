@@ -183,8 +183,36 @@ class Module:
         TODO
         :return:
         """
-        # return super().__repr__()
-        return 'fuck'
+        # We treat the extra repr like the sub-module, one item per line
+        extra_lines = []
+        extra_repr = self.extra_repr()
+        # empty string will be split into list ['']
+        if extra_repr:
+            extra_lines = extra_repr.split('\n')
+        child_lines = []
+        for key, module in self.__annotations__.items():
+            if inspect.isclass(module) and issubclass(module, Module):
+                mod_str = repr(module)
+                mod_str = _addindent(mod_str, 2)
+                child_lines.append('(' + key + '): ' + mod_str)
+        lines = extra_lines + child_lines
+
+        main_str = self._get_name() + '('
+        if lines:
+            # simple one-liner info, which most builtin Modules will use
+            if len(extra_lines) == 1 and not child_lines:
+                main_str += extra_lines[0]
+            else:
+                main_str += '\n  ' + '\n  '.join(lines) + '\n'
+
+        main_str += ')'
+        return main_str
+
+    def extra_repr(self):
+        return ''
+
+    def _get_name(self):
+        return self.__class__.__name__
 
 
 def differentiable(cls: Module, use_dataclass=True):
