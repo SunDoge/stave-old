@@ -4,8 +4,10 @@ import numpy as np
 
 from .. import functional as F
 from ..parameter import Parameter
-from .module import Module, differentiable
-from jax import np as jnp, random as jrandom
+from .module import Module, differentiable, Differentiable
+# from jax import np as jnp, random as jrandom
+from jax import numpy as jnp, random as jrandom
+from ..parameter import Parameter
 from dataclasses import dataclass
 from typing import Optional
 
@@ -48,10 +50,10 @@ class Linear(Module):
     out_features: int
     use_bias: bool
 
-    weight: differentiable
-    bias: differentiable
+    weight: Differentiable
+    bias: Differentiable
 
-    def __call__(self, input: DeviceArray):
+    def __call__(self, input: jnp.ndarray):
         return F.linear(input, self.weight, self.bias)
 
     def reset_parameters(self, rng):

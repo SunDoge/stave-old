@@ -1,7 +1,7 @@
 import functools
 from collections import OrderedDict
 
-from jax import random as jrandom
+from jax import random as jrandom, numpy as jnp
 from jax.tree_util import register_pytree_node
 from ..parameter import Parameter
 from jax.interpreters.xla import DeviceArray
@@ -10,6 +10,7 @@ from typing import Dict, List, TypeVar, NewType, Union, Type
 import typing
 from torch import nn
 import inspect
+from ..parameter import Parameter
 
 
 def _addindent(s_, num_spaces):
@@ -24,7 +25,7 @@ def _addindent(s_, num_spaces):
     return s
 
 
-Differentiable = NewType('Differentiable', Union[DeviceArray, float])
+Differentiable = NewType('Differentiable', Union[jnp.ndarray, float])
 
 
 # Differentiable = Union[T]
@@ -37,34 +38,11 @@ class Fuck:
 
 
 class Module:
-    # def __init__(self):
-    #     """
-    #     _args, _kwargs用于存储创建参数
-    #     这些参数可以在differentiable中动态添加
-    #     暂时不确定是动态添加好还是静态添加好
-    #     """
-    #     self._args = None
-    #     self._kwargs = None
-    #
-    #     self._parameters = OrderedDict()
-    #     self._buffers = OrderedDict()
-    #     self._modules = OrderedDict()
-    #
-    #     self.training = True
-
-    def _train(self, mode=True):
-        """
-        If module has `training`, rewrite this method
-        :param mode:
-        :return:
-        """
-        pass
 
     def train(self, mode=True):
-        self._train(mode=mode)
 
         for k, v in self.__annotations__.items():
-            if issubclass(v, Module):
+            if inspect.isclass(v) and issubclass(v, Module):
                 getattr(self, k).train(mode=mode)
 
         return self
@@ -160,19 +138,20 @@ class Module:
             for k, v in self.__annotations__.items():
                 if inspect.isclass(v) and issubclass(v, Module):
                     rng, layer_rng = jrandom.split(rng)
-                    getattr(self, k).initialize(seed=seed, recurse=recurse, rng=rng)
+                    getattr(self, k).initialize(seed=seed, recurse=recurse, rng=layer_rng)
 
-    def deconstruct(self):
-        children = {}
-        aux_data = {}
-        for k, v in self.__annotations__.items():
-            if v is differentiable or issubclass(v, Module):
-                children[k] = getattr(self, k)
-            else:
-                aux_data[k] = getattr(self, k)
-        # print(children)
-        # print(aux_data)
-        return children, aux_data
+    # def deconstruct(self):
+    #     children = {}
+    #     aux_data = {}
+    #     for k, v in self.__annotations__.items():
+    #         if v is differentiable or v is Parameter or v is Differentiable or issubclass(v, Module):
+    #             children[k] = getattr(self, k)
+    #         else:
+    #             aux_data[k] = getattr(self, k)
+    #     # print(children)
+    #     # print(aux_data)
+    #     print(f'{self.__class__}.deconstruct')
+    #     return children, aux_data
 
     @classmethod
     def new(cls, *args, **kwargs):
@@ -214,6 +193,33 @@ class Module:
     def _get_name(self):
         return self.__class__.__name__
 
+    def flatten(self) -> (List[Dict], Dict):
+        children = {}
+        aux_data = {}
+        for k, v in self.__annotations__.items():
+            if v is Differentiable or (inspect.isclass(v) and issubclass(v, Module)):
+                children[k] = getattr(self, k)
+            else:
+                aux_data[k] = getattr(self, k)
+        print('=' * 50)
+        print(f'{self.__class__}.flatten() ->(\n{children},\n{aux_data})')
+        return [children], aux_data
+
+    @classmethod
+    def unflatten(cls, aux_data: Dict, children: List[Dict]):
+        print('='*50)
+        print(f'{cls}.unflatten(\n{children},\n{aux_data})')
+
+        kwargs = {}
+        kwargs.update(children[0])
+        kwargs.update(aux_data)
+        # print(cls, aux_data)
+        obj = cls(
+            **kwargs
+        )
+
+        return obj
+
 
 def differentiable(cls: Module, use_dataclass=True):
     # @functools.wraps(cls)
@@ -229,39 +235,39 @@ def differentiable(cls: Module, use_dataclass=True):
     if use_dataclass:
         cls = dataclass(cls, repr=False)
 
-    def flatten(obj: Module) -> (List[Dict], Dict):
-        """
-        get args, kwargs of obj as aux_data
-        get params of obj as children
-        return aux_data, children
-        """
-
-        children, aux_data = obj.deconstruct()
-
-        # print('=' * 100)
-        # print(obj, children)
-        # print('=' * 100)
-        return [children], aux_data
-
-    def unflatten(aux_data: Dict, children: List[Dict]):
-        """
-        obj = cls(aux_data)
-        obj.load(children)
-        return obj
-        """
-
-        aux_data.update(children[0])
-        # print(cls, aux_data)
-        obj = cls(
-            **aux_data
-        )
-
-        return obj
+    # def flatten(obj: Module) -> (List[Dict], Dict):
+    #     """
+    #     get args, kwargs of obj as aux_data
+    #     get params of obj as children
+    #     return aux_data, children
+    #     """
+    #
+    #     children, aux_data = obj.deconstruct()
+    #
+    #     # print('=' * 100)
+    #     # print(obj, children)
+    #     # print('=' * 100)
+    #     return [children], aux_data
+    #
+    # def unflatten(aux_data: Dict, children: List[Dict]):
+    #     """
+    #     obj = cls(aux_data)
+    #     obj.load(children)
+    #     return obj
+    #     """
+    #
+    #     aux_data.update(children[0])
+    #     # print(cls, aux_data)
+    #     obj = cls(
+    #         **aux_data
+    #     )
+    #
+    #     return obj
 
     register_pytree_node(
         cls,
-        flatten,
-        unflatten,
+        cls.flatten,
+        cls.unflatten,
     )
 
     return cls
