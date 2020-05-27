@@ -1,16 +1,16 @@
-import jax
-from jax.numpy import DeviceArray
-import numpy as np
-
-from .. import functional as F
-from ..parameter import Parameter
-from .module import Module, differentiable, Differentiable
-# from jax import np as jnp, random as jrandom
-from jax import numpy as jnp, random as jrandom
-from ..parameter import Parameter
 from dataclasses import dataclass
 from typing import Optional
 
+import jax
+import numpy as np
+# from jax import np as jnp, random as jrandom
+from jax import numpy as jnp
+from jax import random as jrandom
+from jax.numpy import DeviceArray
+
+from .. import functional as F
+from ..parameter import Parameter
+from .module import Differentiable, Module, differentiable
 
 # @differentiable
 # @dataclass
@@ -75,4 +75,9 @@ class Linear(Module):
             use_bias=use_bias,
             weight=weight,
             bias=bias
+        )
+
+    def extra_repr(self):
+        return 'in_features={}, out_features={}, bias={}'.format(
+            self.in_features, self.out_features, self.bias is not None
         )
