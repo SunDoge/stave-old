@@ -5,6 +5,7 @@ import numpy as onp
 import torch
 import torch.nn as torchnn
 from jax import random, grad, jit, numpy as np
+import jax
 
 import torchx.nn as torchxnn
 
@@ -37,4 +38,16 @@ print(gstep(linear1, x1))
 
 y = linear2(x2)
 print(y)
+
+
+@jit
+def step1(m, x):
+    return np.sum(m(x)), m
+
+gstep1 = jax.value_and_grad(step1, has_aux=True)
+gstep1 = jax.jit(gstep1)
+
+(loss, grad), linear1 = gstep1(linear1, x1)
+
+import ipdb; ipdb.set_trace()
 
