@@ -4,6 +4,11 @@ from typing import Optional
 from jax.interpreters.xla import DeviceArray
 # from jax.numpy import DeviceArray
 
+from jax.nn import (
+    relu,
+    relu6,
+)
+
 
 # from jax.interpreters.xla import DeviceArray
 

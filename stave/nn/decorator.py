@@ -17,6 +17,7 @@ class NodeType:
     PARAMETER = 'Parameter'
     BUFFER = 'Buffer'
     CONSTANT = 'Constant'
+    MODULE = 'Module'
 
 
 PARAMETER = {
@@ -29,6 +30,11 @@ BUFFER = {
 
 CONSTANT = {
     _NODE_TYPE: NodeType.CONSTANT
+}
+
+
+MODULE = {
+    _NODE_TYPE: NodeType.MODULE
 }
 
 T = TypeVar('T')

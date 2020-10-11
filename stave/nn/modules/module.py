@@ -19,6 +19,7 @@ def _addindent(s_, num_spaces):
     return s
 
 
+@dataclass(repr=False)
 class Module:
 
     def train(self, mode=True):
@@ -81,8 +82,8 @@ class Module:
         if extra_repr:
             extra_lines = extra_repr.split('\n')
         child_lines = []
-        for key, module in self.__annotations__.items():
-            if inspect.isclass(module) and issubclass(module, Module):
+        for key, module in self.__dict__.items():
+            if isinstance(module, Module):
                 mod_str = repr(module)
                 mod_str = _addindent(mod_str, 2)
                 child_lines.append('(' + key + '): ' + mod_str)
