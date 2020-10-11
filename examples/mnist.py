@@ -1,18 +1,17 @@
 import logging
+import pickle
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Tuple
 
+import jax
+import numpy as np
 import stave.nn.functional as F
+from jax import numpy as jnp
 from jax.interpreters.xla import DeviceArray
+from jax.nn import log_softmax
 from stave import nn
-from stave.nn.decorator import MODULE
 from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
-import numpy as np
-from jax.nn import log_softmax
-import jax
-from jax import numpy as jnp
-import pickle
 
 _logger = logging.getLogger(__name__)
 
