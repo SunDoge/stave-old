@@ -1,6 +1,5 @@
 from dataclasses import Field, dataclass, field
 from typing import Any, List, Dict, Type, TypeVar, Tuple
-from .modules import Module
 from jax.tree_util import register_pytree_node
 import logging
 
@@ -61,7 +60,7 @@ def differentiable(cls: Type[T]) -> Type[T]:
 
     keys = _get_keys(cls)
 
-    def _tree_flatten(node: Module) -> Tuple[Tuple[Dict[str, Any]], Dict[str, Any]]:
+    def _tree_flatten(node: Any) -> Tuple[Tuple[Dict[str, Any]], Dict[str, Any]]:
         children = {}
         aux_data = {}
         for key in keys[_CHILDREN]:
@@ -76,7 +75,7 @@ def differentiable(cls: Type[T]) -> Type[T]:
         _logger.debug('children: %s', children)
         return (children,), aux_data
 
-    def _tree_unflatten(aux_data: Tuple[Dict[str, Any]], children: Dict[str, Any]) -> Module:
+    def _tree_unflatten(aux_data: Tuple[Dict[str, Any]], children: Dict[str, Any]) -> Any:
         _logger.debug('=' * 50)
         _logger.debug('unflatten: %s', cls)
         _logger.debug('aux_data: %s', aux_data)
