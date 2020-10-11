@@ -25,8 +25,9 @@ def _addindent(s_, num_spaces):
     return s
 
 
-Differentiable = NewType('Differentiable', Union[jnp.ndarray, float])
-
+# Differentiable = NewType('Differentiable', Union[jnp.ndarray, float, None])
+Parameter = NewType('Parameter', Union[jnp.ndarray, float, None])
+Buffer = NewType('Buffer', Union[jnp.ndarray, float, None])
 
 # Differentiable = Union[T]
 
@@ -197,7 +198,7 @@ class Module:
         children = {}
         aux_data = {}
         for k, v in self.__annotations__.items():
-            if v is Differentiable or (inspect.isclass(v) and issubclass(v, Module)):
+            if v is Parameter or (inspect.isclass(v) and issubclass(v, Module)):
                 children[k] = getattr(self, k)
             else:
                 aux_data[k] = getattr(self, k)

@@ -10,7 +10,7 @@ from jax.numpy import DeviceArray
 
 from .. import functional as F
 from ..parameter import Parameter
-from .module import Differentiable, Module, differentiable
+from .module import Parameter, Module, differentiable
 
 # @differentiable
 # @dataclass
@@ -50,8 +50,8 @@ class Linear(Module):
     out_features: int
     use_bias: bool
 
-    weight: Differentiable
-    bias: Differentiable
+    weight: Parameter
+    bias: Parameter
 
     def __call__(self, input: jnp.ndarray):
         return F.linear(input, self.weight, self.bias)
