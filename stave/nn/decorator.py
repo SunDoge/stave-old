@@ -54,7 +54,7 @@ def _get_keys(node: Any) -> Keys:
 
     for key, value in fields.items():
         node_type = value.metadata.get(_NODE_TYPE, NodeType.CONSTANT)
-        if node_type == NodeType.PARAMETER or node_type == NodeType.BUFFER:
+        if node_type in {NodeType.PARAMETER, NodeType.BUFFER, NodeType.MODULE}:
             keys[_CHILDREN].append(key)
         else:
             keys[_AUXILIARY_DATA].append(key)

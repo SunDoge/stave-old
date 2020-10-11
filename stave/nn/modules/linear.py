@@ -23,11 +23,13 @@ class Linear(Module):
     def __call__(self, input: DeviceArray):
         return F.linear(input, self.weight, self.bias)
 
-    def reset_parameters(self, rng):
+    def _reset_parameters(self, rng: DeviceArray):
         k1, k2 = jrandom.split(rng)
         self.weight = jrandom.normal(k1, self.weight.shape)
         if self.use_bias:
             self.bias = jrandom.normal(k2, self.bias.shape)
+
+        # print('pppp')
 
     @classmethod
     def new(cls, in_features: int, out_features: int, use_bias=True):

@@ -8,7 +8,11 @@ This project is inspired by [cgarciae/jax-differentiable](https://github.com/cga
 
 **TODO: API changed!!! Rewrite the README!!!**
 
+Just checkout [examples/mnist.py](examples/mnist.py), the model is trainable now!
+
 ## Concepts
+
+**Out-dated, checkout the example for the newest API!**
 
 ### Module
 
