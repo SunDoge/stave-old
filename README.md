@@ -1,10 +1,12 @@
-# torchx
+# stave
 
 A proof-of-concept deep learning library based on [JAX](https://github.com/google/jax).
 
 This project is inspired by [cgarciae/jax-differentiable](https://github.com/cgarciae/jax-differentiable).
 
 **Note: I'm not good at naming, so the name may change in the future. This project is POC and WIP, everything will change.**
+
+**TODO: API changed!!! Rewrite the README!!!**
 
 ## Concepts
 
@@ -13,7 +15,7 @@ This project is inspired by [cgarciae/jax-differentiable](https://github.com/cga
 A module is a struct (dataclass in python). All attributes must be defined explicitly.
 
 ```python
-from torchx import nn, differentiable
+from stave import nn, differentiable
 from jax import np, jit
 
 @differentiable
@@ -45,7 +47,7 @@ The computation happens in `forward` function. Maybe I'll use `__call__` functio
 Model is a combination of modules.
 
 ```python
-from torchx import nn, differentiable
+from stave import nn, differentiable
 from jax import np, jit
 
 @differentiable
@@ -58,7 +60,7 @@ class Model(nn.Module):
         linear1 = nn.Linear.new(in_features, hidden_dim)
         linear2 = nn.Linear.new(hidden_dim, out_features)
         return cls(linear1, linear2)
-    
+
     @jit
     def forward(self, x):
         out = self.linear1(x)
@@ -75,7 +77,7 @@ To get the gradient of the model, we need to create a wrapper function, due to t
 ```python
 import jax
 from jax import np
-from torchx import nn
+from stave import nn
 
 def loss_fn(output, target):
     return (output - target) ** 2
@@ -99,6 +101,3 @@ dmodel = dloss(model, input, label)
 ### Optimizer
 
 TODO
-
-
-

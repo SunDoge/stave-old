@@ -1,7 +1,8 @@
 from torchx import nn, differentiable
-from jax import np as jnp, random as jrandom
+from jax import numpy as jnp, random as jrandom
 import jax
 from dataclasses import dataclass
+
 
 @differentiable
 class Model(nn.Module):
@@ -28,12 +29,16 @@ class Model(nn.Module):
         x = self.linear2(x)
         return x
 
+    def train(self, mode=True):
+        print('train mode')
+        super().train(mode=mode)
 
 
 rng = jrandom.PRNGKey(42)
 rng, key = jrandom.split(rng)
 m = Model.new(in_features=16)
 m.initialize(rng=rng)
+m.train()
 
 # print(m)
 
@@ -46,11 +51,20 @@ def loss(m, x):
     return m(x).sum()
 
 
-dloss = jax.jit(jax.grad(loss), static_argnums=0)
+# dloss = jax.jit(jax.grad(loss))
+dloss = jax.grad(loss)
 
 dw = dloss(m, x)
-print(dw)
+print('dw =', dw)
 
-flat, tree = jax.tree_flatten(dw)
-dw1 = jax.tree_unflatten(tree, flat)
-print(dw1)
+# import ipdb; ipdb.set_trace()
+
+dw = dloss(m, x)
+
+# dw = dloss(m, x)
+
+# dw = dloss(m, x)
+
+# flat, tree = jax.tree_flatten(dw)
+# dw1 = jax.tree_unflatten(tree, flat)
+# print(dw1)
