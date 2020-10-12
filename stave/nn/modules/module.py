@@ -1,10 +1,12 @@
 import inspect
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import Field, dataclass, field
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from jax import numpy as jnp
 from jax import random as jrandom
 from jax.interpreters.xla import DeviceArray
+from ..decorator import BUFFER, CONSTANT, FIELDS, MODULE, NODE_TYPE, NodeType
+from stave.utils._functools import cached_property
 
 
 def _addindent(s_, num_spaces):
@@ -105,3 +107,49 @@ class Module:
 
     def _get_name(self):
         return self.__class__.__name__
+
+    def parameters(self, recurse: bool = True) -> List[Union[DeviceArray, 'Module']]:
+        pass
+
+    def named_parameters(self, prefix: str = '', recurse:  bool = True) -> Tuple[str, Union[DeviceArray, 'Module']]:
+        pass
+
+    def _trainable_keys(self) -> List[str]:
+        fields: Dict[str, Field] = getattr(self, FIELDS)
+
+        keys = []
+        for key, value in fields.items():
+            node_type = value.metadata.get(NODE_TYPE, NodeType.CONSTANT)
+
+            if node_type == NodeType.PARAMETER or node_type == NodeType.MODULE:
+                keys.append(key)
+
+        return keys
+
+    def trainable(self):
+        keys = self._trainable_keys()
+        # return [key,getattr(self, key) for key in keys]
+        return {key: getattr(self, key) for key in keys}
+
+    def filter_buffers(self):
+        buffer_keys = self._keys[NodeType.BUFFER]
+        for key in buffer_keys:
+            value = getattr(self, key)
+            value = jnp.zeros_like(value)
+
+        return self
+
+    def _keys(self) -> Dict[str, List[str]]:
+        fields: Dict[str, Field] = getattr(self, FIELDS)
+
+        keys: Dict[str, List[str]] = {
+            NodeType.PARAMETER: [],
+            NodeType.BUFFER: [],
+            NodeType.MODULE: [],
+            NodeType.CONSTANT: [],
+        }
+        for key, value in fields.items():
+            node_type = value.metadata.get(NODE_TYPE, NodeType.CONSTANT)
+            keys[node_type].append(key)
+
+        return keys

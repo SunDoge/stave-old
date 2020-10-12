@@ -6,9 +6,9 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
+FIELDS = '__dataclass_fields__'
+NODE_TYPE = 'node_type'
 
-_FIELDS = '__dataclass_fields__'
-_NODE_TYPE = 'node_type'
 _CHILDREN = 'children'
 _AUXILIARY_DATA = 'auxiliary_data'
 
@@ -21,20 +21,20 @@ class NodeType:
 
 
 PARAMETER = {
-    _NODE_TYPE: NodeType.PARAMETER
+    NODE_TYPE: NodeType.PARAMETER
 }
 
 BUFFER = {
-    _NODE_TYPE: NodeType.BUFFER
+    NODE_TYPE: NodeType.BUFFER
 }
 
 CONSTANT = {
-    _NODE_TYPE: NodeType.CONSTANT
+    NODE_TYPE: NodeType.CONSTANT
 }
 
 
 MODULE = {
-    _NODE_TYPE: NodeType.MODULE
+    NODE_TYPE: NodeType.MODULE
 }
 
 T = TypeVar('T')
@@ -50,10 +50,10 @@ def _get_keys(node: Any) -> Keys:
         _AUXILIARY_DATA: [],
     }
 
-    fields: Dict[str, Field] = getattr(node, _FIELDS)
+    fields: Dict[str, Field] = getattr(node, FIELDS)
 
     for key, value in fields.items():
-        node_type = value.metadata.get(_NODE_TYPE, NodeType.CONSTANT)
+        node_type = value.metadata.get(NODE_TYPE, NodeType.CONSTANT)
         if node_type in {NodeType.PARAMETER, NodeType.BUFFER, NodeType.MODULE}:
             keys[_CHILDREN].append(key)
         else:
