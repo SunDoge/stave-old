@@ -10,6 +10,22 @@ This project is inspired by [cgarciae/jax-differentiable](https://github.com/cga
 
 Just checkout [examples/mnist.py](examples/mnist.py), the model is trainable now!
 
+## Installation
+
+### JAX installation
+
+```bash
+pip install --upgrade jax jaxlib  # CPU-only version
+```
+
+Check [google/jax](https://github.com/google/jax#pip-installation) for GPU version.
+
+### stave installation
+
+```bash
+pip install git+https://github.com/SunDoge/stave.git
+```
+
 ## Concepts
 
 **Out-dated, checkout the example for the newest API!**
