@@ -137,8 +137,6 @@ def train(model: MLP, train_loader: NumpyLoader, epoch: int) -> MLP:
         (loss, (model, acc)), grads = dforward_step(model, data, target)
         # import ipdb; ipdb.set_trace()
 
-        grads.filter_buffers()
-
         # Update model again, with SGD optimization
         model = jax.tree_multimap(sgd, model, grads)
 
