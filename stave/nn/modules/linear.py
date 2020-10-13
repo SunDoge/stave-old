@@ -1,4 +1,3 @@
-from dataclasses import dataclass, field
 from typing import Optional
 
 from jax import numpy as jnp
@@ -6,8 +5,11 @@ from jax import random as jrandom
 from jax.interpreters.xla import DeviceArray
 
 from .. import functional as F
-from ..decorator import BUFFER, PARAMETER, differentiable
+# from ..decorator import BUFFER, PARAMETER, differentiable
+
 from .module import Module
+from ..struct import differentiable, PYTREE_NODE
+from dataclasses import dataclass, field
 
 
 @differentiable
@@ -17,8 +19,8 @@ class Linear(Module):
     out_features: int
     use_bias: bool
 
-    weight: DeviceArray = field(metadata=PARAMETER)
-    bias: Optional[DeviceArray] = field(metadata=PARAMETER)
+    weight: DeviceArray = field(metadata=PYTREE_NODE)
+    bias: Optional[DeviceArray] = field(metadata=PYTREE_NODE)
 
     def __call__(self, input: DeviceArray):
         return F.linear(input, self.weight, self.bias)
@@ -26,7 +28,7 @@ class Linear(Module):
     def _reset_parameters(self, rng: DeviceArray):
         k1, k2 = jrandom.split(rng)
         self.weight = jrandom.normal(k1, self.weight.shape)
-        if self.use_bias:
+        if self.bias is not None:
             self.bias = jrandom.normal(k2, self.bias.shape)
 
         # print('pppp')

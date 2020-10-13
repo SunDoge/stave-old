@@ -10,8 +10,10 @@ from jax import numpy as jnp
 from jax.interpreters.xla import DeviceArray
 from jax.nn import log_softmax
 from stave import nn
+from stave.nn import struct
 from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
+
 
 _logger = logging.getLogger(__name__)
 
@@ -64,8 +66,8 @@ def get_datasets():
 @nn.differentiable
 @dataclass(repr=False)
 class MLP(nn.Module):
-    linear1: nn.Linear = field(metadata=nn.MODULE)
-    linear2: nn.Linear = field(metadata=nn.MODULE)
+    linear1: nn.Linear = field(metadata=nn.PYTREE_NODE)
+    linear2: nn.Linear = field(metadata=nn.PYTREE_NODE)
 
     @classmethod
     def new(cls, in_features: int, hidden_dim: int, out_features: int):

@@ -1,2 +1,2 @@
 from .modules import *
-from .decorator import differentiable, PARAMETER, BUFFER, CONSTANT, MODULE
+from .struct import differentiable, PYTREE_NODE
