@@ -66,6 +66,7 @@ class Dense(Module):
     def forward(self, x: Tensor) -> Tensor:
         return jnp.dot(x, self.weight.data.T)
 
+
 if __name__ == "__main__":
     dense = Dense(5, 10).init()
     x = jnp.ones((2, 5))
