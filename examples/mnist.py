@@ -65,7 +65,7 @@ def get_datasets():
 
 @nn.differentiable
 @dataclass(repr=False)
-class MLP(nn.Module):
+class MLP(nn._Module):
     linear1: nn.Linear = field(metadata=nn.PYTREE_NODE)
     linear2: nn.Linear = field(metadata=nn.PYTREE_NODE)
 

@@ -1,2 +1,2 @@
 from .linear import Linear
-from .module import Module
+from .module import _Module

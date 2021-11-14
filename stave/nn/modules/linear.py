@@ -7,14 +7,14 @@ from jax.interpreters.xla import DeviceArray
 from .. import functional as F
 # from ..decorator import BUFFER, PARAMETER, differentiable
 
-from .module import Module
+from .module import _Module
 from ..struct import differentiable, PYTREE_NODE
 from dataclasses import dataclass, field
 
 
 @differentiable
 @dataclass(repr=False)
-class Linear(Module):
+class Linear(_Module):
     in_features: int
     out_features: int
     use_bias: bool

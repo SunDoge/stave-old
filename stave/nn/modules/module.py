@@ -1,11 +1,14 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 from jax import numpy as jnp
 from jax import random as jrandom
+from jax._src.random import PRNGKey
 from jax.interpreters.xla import DeviceArray
 # from ..decorator import BUFFER, CONSTANT, FIELDS, MODULE, NODE_TYPE, NodeType
 from dataclasses import dataclass
 from stave.utils._functools import cached_property
+import jax
+from dataclasses import dataclass
 
 
 def _addindent(s_, num_spaces):
@@ -21,13 +24,13 @@ def _addindent(s_, num_spaces):
 
 
 @dataclass(repr=False)
-class Module:
+class _Module:
 
     def train(self, mode=True):
         self._train(mode=mode)
 
         for _key, value in self.__dict__.items():
-            if isinstance(value, Module):
+            if isinstance(value, _Module):
                 value.train(mode=mode)
 
         return self
@@ -44,7 +47,7 @@ class Module:
     def register_parameter(self, name: str, param):
         pass
 
-    def add_module(self, name: str, module: 'Module'):
+    def add_module(self, name: str, module: '_Module'):
         pass
 
     def _reset_parameters(self, rng: DeviceArray):
@@ -63,7 +66,7 @@ class Module:
 
         if recurse:
             for _key, value in self.__dict__.items():
-                if isinstance(value, Module):
+                if isinstance(value, _Module):
                     rng, module_rng = jrandom.split(rng)
                     value.initialize(
                         seed=seed, recurse=recurse, rng=module_rng
@@ -84,7 +87,7 @@ class Module:
             extra_lines = extra_repr.split('\n')
         child_lines = []
         for key, module in self.__dict__.items():
-            if isinstance(module, Module):
+            if isinstance(module, _Module):
                 mod_str = repr(module)
                 mod_str = _addindent(mod_str, 2)
                 child_lines.append('(' + key + '): ' + mod_str)
@@ -107,8 +110,64 @@ class Module:
     def _get_name(self):
         return self.__class__.__name__
 
-    def parameters(self, recurse: bool = True) -> List[Union[DeviceArray, 'Module']]:
+    def parameters(self, recurse: bool = True) -> List[Union[DeviceArray, '_Module']]:
         pass
 
-    def named_parameters(self, prefix: str = '', recurse:  bool = True) -> Tuple[str, Union[DeviceArray, 'Module']]:
+    def named_parameters(self, prefix: str = '', recurse:  bool = True) -> Tuple[str, Union[DeviceArray, '_Module']]:
+        pass
+
+
+_FLOAT32 = jax.numpy.float32
+
+
+def _default_init_method(key, shape, dtype):
+    data = jax.random.uniform(key, shape, dtype)
+    return data
+
+
+InitMethod = Callable[[Any, Any, Any], DeviceArray]
+
+
+@dataclass
+class Parameter:
+
+    shape: Sequence[int] = ()
+    dtype: Any = _FLOAT32
+    data: Optional[DeviceArray] = None
+    init_method: InitMethod = _default_init_method
+    requires_grad: bool = True
+
+    def replace_data(self) -> DeviceArray:
+        data = self.data
+        self.data = None
+        return data
+
+    def init_data(self, key: DeviceArray) -> DeviceArray:
+        if self.data is None:
+            k1, k2 = jax.random.split(key)
+            self.data = self.init_method(k2, self.shape, self.dtype)
+            return k1
+        else:
+            return key
+
+
+@dataclass
+class Buffer(Parameter):
+    requires_grad: bool = False
+
+
+@dataclass
+class Model:
+
+    params: Dict[str, Parameter]
+    buffers: Dict[str, Buffer]
+    pure_forward: Callable
+
+    def __iter__(self):
+        yield from [self.params, self.buffers, self.pure_forward]
+
+
+class Module:
+
+    def init(self, key: DeviceArray = PRNGKey(42)):
         pass
