@@ -66,13 +66,13 @@ def get_datasets():
 @nn.differentiable
 @dataclass(repr=False)
 class MLP(nn._Module):
-    linear1: nn.Linear = field(metadata=nn.PYTREE_NODE)
-    linear2: nn.Linear = field(metadata=nn.PYTREE_NODE)
+    linear1: nn._Linear = field(metadata=nn.PYTREE_NODE)
+    linear2: nn._Linear = field(metadata=nn.PYTREE_NODE)
 
     @classmethod
     def new(cls, in_features: int, hidden_dim: int, out_features: int):
-        linear1 = nn.Linear.new(in_features, hidden_dim)
-        linear2 = nn.Linear.new(hidden_dim, out_features)
+        linear1 = nn._Linear.new(in_features, hidden_dim)
+        linear2 = nn._Linear.new(hidden_dim, out_features)
 
         return cls(
             linear1=linear1,

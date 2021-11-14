@@ -7,14 +7,15 @@ from jax.interpreters.xla import DeviceArray
 from .. import functional as F
 # from ..decorator import BUFFER, PARAMETER, differentiable
 
-from .module import _Module
+from .module import _Module, Module, Parameter, Tensor
 from ..struct import differentiable, PYTREE_NODE
 from dataclasses import dataclass, field
+from ..init_methods import XavierUniform
 
 
 @differentiable
 @dataclass(repr=False)
-class Linear(_Module):
+class _Linear(_Module):
     in_features: int
     out_features: int
     use_bias: bool
@@ -54,6 +55,19 @@ class Linear(_Module):
         )
 
 
+class Dense(Module):
+
+    def __init__(self, in_features: int, out_features: int) -> None:
+        super().__init__()
+        self.weight = Parameter(
+            (out_features, in_features), init_method=XavierUniform()
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        return jnp.dot(x, self.weight.data.T)
+
 if __name__ == "__main__":
-    linear = Linear.new(5, 10)
-    print(linear)
+    dense = Dense(5, 10).init()
+    x = jnp.ones((2, 5))
+    y, new_buffers = dense.pure_forward(dense.params, dense.buffers, x)
+    print(y)
