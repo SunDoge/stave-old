@@ -1,16 +1,17 @@
+from build.lib.stave.nn.modules.module import Module
 from jax.interpreters.xla import DeviceArray
-from ..decorator import differentiable
-from dataclasses import dataclass
-from .module import _Module
-from .. import functional as F
+import ..functional as F
+
+Tensor = DeviceArray
 
 
-
-@differentiable
-@dataclass(repr=False)
-class ReLU(_Module):
-
-    def __call__(self, x: DeviceArray) -> DeviceArray:
+class ReLU(Module):
+    
+    def forward(self, x: Tensor) -> Tensor:
         return F.relu(x)
+
+
+
+
 
     

@@ -7,7 +7,7 @@ A proof-of-concept deep learning library based on [JAX](https://github.com/googl
 ### JAX installation
 
 ```bash
-pip install --upgrade jax jaxlib  # CPU-only version
+pip install --upgrade "jax[cpu]"
 ```
 
 Check [google/jax](https://github.com/google/jax#pip-installation) for GPU version.
