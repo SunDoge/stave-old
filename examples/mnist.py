@@ -10,7 +10,6 @@ from jax import numpy as jnp
 from jax.interpreters.xla import DeviceArray
 from jax.nn import log_softmax
 from stave import nn
-from stave.nn import struct
 from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
 
@@ -63,23 +62,19 @@ def get_datasets():
     return train_ds, val_ds
 
 
-@nn.differentiable
-@dataclass(repr=False)
-class MLP(nn._Module):
-    linear1: nn._Linear = field(metadata=nn.PYTREE_NODE)
-    linear2: nn._Linear = field(metadata=nn.PYTREE_NODE)
+class MLP(nn.Module):
 
-    @classmethod
-    def new(cls, in_features: int, hidden_dim: int, out_features: int):
-        linear1 = nn._Linear.new(in_features, hidden_dim)
-        linear2 = nn._Linear.new(hidden_dim, out_features)
+    def __init__(self, in_features: int, hidden_dim: int, out_features: int) -> None:
+        super().__init__()
+        self.linear1 = nn.Seq(
+            [nn.Dense(in_features, hidden_dim), nn.BiasAdd(hidden_dim)])
+        self.linear2 = nn.Seq(
+            [nn.Dense(hidden_dim, out_features), nn.BiasAdd(out_features)])
 
-        return cls(
-            linear1=linear1,
-            linear2=linear2,
-        )
+        # self.linear1 = nn.Dense(in_features, hidden_dim)
+        # self.linear2 = nn.Dense(hidden_dim, out_features)
 
-    def __call__(self, x: DeviceArray) -> DeviceArray:
+    def forward(self, x: DeviceArray) -> DeviceArray:
         x = self.linear1(x)
         x = F.relu(x)
         x = self.linear2(x)
@@ -175,9 +170,10 @@ def main():
     batch_size = 128
     num_epochs = 10
 
-    model = MLP.new(in_features, hidden_dim, out_features)
-    model.initialize()
+    # model = MLP.new(in_features, hidden_dim, out_features)
+    model = MLP(in_features, hidden_dim, out_features).init()
 
+    print(model)
     _logger.info('mlp: %s', model)
 
     train_ds, test_ds = get_datasets()
@@ -191,12 +187,13 @@ def main():
         batch_size=batch_size
     )
 
+    exit()
     for epoch in range(num_epochs):
         model = train(model, train_loader, epoch)
         test(model, test_loader, epoch)
 
     with open('mlp.pkl', 'wb') as f:
-        pickle.dump(model, f)
+        pickle.dump([model.params, model.buffers], f)
         _logger.info('save model')
 
 

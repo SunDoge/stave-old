@@ -199,7 +199,7 @@ class Module:
     def named_parameters(self, prefix: str = '', requires_grad: bool = True):
         for key, value in self.__dict__.items():
             if isinstance(value, Module):
-                for sub_key, sub_value in value.named_parameters(prefix=key + '.'):
+                for sub_key, sub_value in value.named_parameters(prefix=key + '.', requires_grad=requires_grad):
                     yield prefix + sub_key, sub_value
             elif isinstance(value, Parameter) and value.requires_grad == requires_grad:
                 yield prefix + key, value
