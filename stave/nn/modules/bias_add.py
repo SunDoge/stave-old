@@ -8,4 +8,4 @@ class BiasAdd(Module):
         self.bias = Parameter((num_features,))
 
     def forward(self, x: Tensor) -> Tensor:
-        return x + self.bias
+        return x + self.bias.data

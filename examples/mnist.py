@@ -9,13 +9,15 @@ import stave.nn.functional as F
 from jax import numpy as jnp
 from jax.interpreters.xla import DeviceArray
 from jax.nn import log_softmax
-from stave import nn
 from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
+
+from stave import nn
 
 
 _logger = logging.getLogger(__name__)
 
+Tensor = DeviceArray
 
 def numpy_collate(batch):
     if isinstance(batch[0], np.ndarray):
@@ -54,8 +56,10 @@ class FlattenAndCast:
 
 
 def get_datasets():
+    _logger.info('build mnist train dataset')
     train_ds = MNIST('data/mnist', download=True,
                      transform=FlattenAndCast(), train=True)
+    _logger.info('build mnist test dataset')
     val_ds = MNIST('data/mnist', download=False,
                    transform=FlattenAndCast(), train=False)
 
@@ -75,9 +79,9 @@ class MLP(nn.Module):
         # self.linear2 = nn.Dense(hidden_dim, out_features)
 
     def forward(self, x: DeviceArray) -> DeviceArray:
-        x = self.linear1(x)
+        x = self.linear1.forward(x)
         x = F.relu(x)
-        x = self.linear2(x)
+        x = self.linear2.forward(x)
         return x
 
 
@@ -110,6 +114,18 @@ def forward_step(
     return loss, (model, acc)
 
 
+def ForwardStep(model: nn.Model):
+
+    @jax.jit
+    def _forward_step(params: dict, buffers: dict, data: Tensor, target: Tensor):
+        output, new_buffers = model.pure_forward(params, buffers, data)
+        loss = cross_entropy(output, target)
+        acc = accuracy(output, target)
+        return loss, (acc, new_buffers)
+
+    return _forward_step
+
+
 dforward_step = jax.value_and_grad(forward_step, has_aux=True)
 dforward_step = jax.jit(dforward_step)
 
@@ -124,18 +140,26 @@ def to_device_array(*xs) -> List[DeviceArray]:
     return [jnp.array(x) for x in xs]
 
 
-def train(model: MLP, train_loader: NumpyLoader, epoch: int) -> MLP:
-    model.train()
+@jax.jit
+def update_params(params: dict, grads: dict):
+    return jax.tree_multimap(sgd, params, grads)
+
+def train(model: nn.Model, train_loader: NumpyLoader, epoch: int) -> MLP:
+
+    forward_step = ForwardStep(model)
+    dforward_step = jax.value_and_grad(forward_step, has_aux=True)
+    dforward_step = jax.jit(dforward_step)
 
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = to_device_array(data, target)
 
         # Update model
-        (loss, (model, acc)), grads = dforward_step(model, data, target)
+        (loss, (acc, new_buffers)), grads = dforward_step(model.params, model.buffers, data, target)
         # import ipdb; ipdb.set_trace()
 
         # Update model again, with SGD optimization
-        model = jax.tree_multimap(sgd, model, grads)
+        model.params = update_params(model.params, grads)
+        model.buffers = new_buffers
 
         _logger.info(
             f'Train epoch {epoch} [{batch_idx}/{len(train_loader)}]\t'
@@ -145,14 +169,15 @@ def train(model: MLP, train_loader: NumpyLoader, epoch: int) -> MLP:
     return model
 
 
-def test(model: MLP, test_loader: NumpyLoader, epoch: int):
-    model.eval()
+def test(model: nn.Model, test_loader: NumpyLoader, epoch: int):
+
+    forward_step = ForwardStep(model)
 
     for batch_idx, (data, target) in enumerate(test_loader):
         data, target = to_device_array(data, target)
 
         # Don't update model
-        loss, (_model, acc) = forward_step(model, data, target)
+        loss, (acc, _new_buffers) = forward_step(model.params, model.buffers, data, target)
 
         _logger.info(
             f'Test epoch {epoch} [{batch_idx}/{len(test_loader)}]\t'
@@ -162,7 +187,7 @@ def test(model: MLP, test_loader: NumpyLoader, epoch: int):
 
 def main():
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO, force=True)
 
     in_features = 28 * 28
     hidden_dim = 1024
@@ -173,7 +198,7 @@ def main():
     # model = MLP.new(in_features, hidden_dim, out_features)
     model = MLP(in_features, hidden_dim, out_features).init()
 
-    print(model)
+    # print(model)
     _logger.info('mlp: %s', model)
 
     train_ds, test_ds = get_datasets()
@@ -187,9 +212,8 @@ def main():
         batch_size=batch_size
     )
 
-    exit()
     for epoch in range(num_epochs):
-        model = train(model, train_loader, epoch)
+        train(model, train_loader, epoch)
         test(model, test_loader, epoch)
 
     with open('mlp.pkl', 'wb') as f:

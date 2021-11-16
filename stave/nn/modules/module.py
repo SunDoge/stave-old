@@ -2,7 +2,6 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 from jax import numpy as jnp
 from jax import random as jrandom
-from jax._src.random import PRNGKey
 from jax.interpreters.xla import DeviceArray, _DeviceArray
 # from ..decorator import BUFFER, CONSTANT, FIELDS, MODULE, NODE_TYPE, NodeType
 from dataclasses import dataclass
@@ -165,7 +164,7 @@ class Model:
 
 class Module:
 
-    def init(self, key: Tensor = PRNGKey(42), dtype: Any = _FLOAT32):
+    def init(self, key: Tensor = jrandom.PRNGKey(42), dtype: Any = _FLOAT32):
         for name, parameter in self.named_parameters():
             key = parameter.init_data(key, dtype)
 

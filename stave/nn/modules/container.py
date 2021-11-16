@@ -19,5 +19,5 @@ class Seq(Module):
 
     def forward(self, x):
         for _key, value in self.items:
-            x = value(x)
+            x = value.forward(x)
         return x
