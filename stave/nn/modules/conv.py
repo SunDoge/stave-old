@@ -1,7 +1,7 @@
 from typing import Any, Optional, Sequence, Tuple
 
 from jax.interpreters.xla import DeviceArray
-from .module import Module
+from .module import _Module
 from ..struct import differentiable, PYTREE_NODE
 from dataclasses import dataclass, field
 from jax import random as jrandom
@@ -11,7 +11,7 @@ from .. import functional as F
 
 @differentiable
 @dataclass(repr=False)
-class _ConvNd(Module):
+class _ConvNd(_Module):
     _in_channels: int
     out_channels: int
     kernel_size: Sequence[int]

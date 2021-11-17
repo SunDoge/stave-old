@@ -9,12 +9,20 @@ from jax.nn import (
     relu6,
 )
 
+Tensor = DeviceArray
 
 # from jax.interpreters.xla import DeviceArray
 
 
 def tanh(input: DeviceArray) -> DeviceArray:
     return jnp.tanh(input)
+
+
+def dense(data: Tensor, weight: Tensor) -> Tensor:
+    return jnp.dot(data, weight.T)
+
+def bias_add(data: Tensor, bias: Tensor) -> Tensor:
+    return data + bias
 
 
 def linear(input: DeviceArray, weight: DeviceArray, bias: Optional[DeviceArray]) -> DeviceArray:

@@ -4,6 +4,7 @@ from timeit import timeit
 import numpy as onp
 import torch
 import torch.nn as torchnn
+torchnn.Sequential
 from jax import random, grad, jit, numpy as np
 import jax
 

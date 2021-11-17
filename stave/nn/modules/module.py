@@ -1,11 +1,13 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 from jax import numpy as jnp
 from jax import random as jrandom
-from jax.interpreters.xla import DeviceArray
+from jax.interpreters.xla import DeviceArray, _DeviceArray
 # from ..decorator import BUFFER, CONSTANT, FIELDS, MODULE, NODE_TYPE, NodeType
 from dataclasses import dataclass
 from stave.utils._functools import cached_property
+import jax
+from dataclasses import dataclass
 
 
 def _addindent(s_, num_spaces):
@@ -21,13 +23,13 @@ def _addindent(s_, num_spaces):
 
 
 @dataclass(repr=False)
-class Module:
+class _Module:
 
     def train(self, mode=True):
         self._train(mode=mode)
 
         for _key, value in self.__dict__.items():
-            if isinstance(value, Module):
+            if isinstance(value, _Module):
                 value.train(mode=mode)
 
         return self
@@ -44,7 +46,7 @@ class Module:
     def register_parameter(self, name: str, param):
         pass
 
-    def add_module(self, name: str, module: 'Module'):
+    def add_module(self, name: str, module: '_Module'):
         pass
 
     def _reset_parameters(self, rng: DeviceArray):
@@ -63,7 +65,7 @@ class Module:
 
         if recurse:
             for _key, value in self.__dict__.items():
-                if isinstance(value, Module):
+                if isinstance(value, _Module):
                     rng, module_rng = jrandom.split(rng)
                     value.initialize(
                         seed=seed, recurse=recurse, rng=module_rng
@@ -84,7 +86,7 @@ class Module:
             extra_lines = extra_repr.split('\n')
         child_lines = []
         for key, module in self.__dict__.items():
-            if isinstance(module, Module):
+            if isinstance(module, _Module):
                 mod_str = repr(module)
                 mod_str = _addindent(mod_str, 2)
                 child_lines.append('(' + key + '): ' + mod_str)
@@ -107,8 +109,108 @@ class Module:
     def _get_name(self):
         return self.__class__.__name__
 
-    def parameters(self, recurse: bool = True) -> List[Union[DeviceArray, 'Module']]:
+    def parameters(self, recurse: bool = True) -> List[Union[DeviceArray, '_Module']]:
         pass
 
-    def named_parameters(self, prefix: str = '', recurse:  bool = True) -> Tuple[str, Union[DeviceArray, 'Module']]:
+    def named_parameters(self, prefix: str = '', recurse:  bool = True) -> Tuple[str, Union[DeviceArray, '_Module']]:
         pass
+
+
+_FLOAT32 = jax.numpy.float32
+
+
+def _default_init_method(key, shape, dtype):
+    data = jax.random.uniform(key, shape, dtype)
+    return data
+
+
+InitMethod = Callable[[Any, Any, Any], DeviceArray]
+Tensor = _DeviceArray
+
+@dataclass
+class Parameter:
+
+    shape: Sequence[int] = ()
+    data: Tensor = None
+    init_method: InitMethod = _default_init_method
+    requires_grad: bool = True
+
+    def replace_data(self) -> DeviceArray:
+        data = self.data
+        self.data = None
+        return data
+
+    def init_data(self, key: DeviceArray, dtype: Any) -> DeviceArray:
+        k1, k2 = jax.random.split(key)
+        self.data = self.init_method(k2, self.shape, dtype)
+        return k1
+        
+
+@dataclass
+class Buffer(Parameter):
+    requires_grad: bool = False
+
+
+@dataclass
+class Model:
+
+    params: Dict[str, Parameter]
+    buffers: Dict[str, Buffer]
+    pure_forward: Callable
+
+    def __iter__(self):
+        yield from [self.params, self.buffers, self.pure_forward]
+
+
+class Module:
+
+    def init(self, key: Tensor = jrandom.PRNGKey(42), dtype: Any = _FLOAT32):
+        for name, parameter in self.named_parameters():
+            key = parameter.init_data(key, dtype)
+
+        for name, buffer in self.named_buffers():
+            key = buffer.init_data(key, dtype)
+
+        def pure_forward(parameters: Dict[str, Tensor], buffers: Dict[str, Tensor], *args, **kwargs):
+            self.pack(parameters, buffers)
+            output = self.forward(*args, **kwargs)
+            _, new_buffers = self.unpack()
+            return output, new_buffers
+
+        parameters, buffers = self.unpack()
+        return Model(parameters, buffers, pure_forward)
+
+    def forward(self, *args, **kwargs):
+        pass
+
+    def pack(self, parameters: Dict[str, Tensor], buffers: Dict[str, Tensor]):
+        for key, value in self.named_parameters():
+            value.data = parameters[key]
+
+        for key, value in self.named_buffers():
+            value.data = buffers[key]
+
+    def unpack(self):
+        parameters = {k: v.replace_data() for k, v in self.named_parameters()}
+        buffers = {k: v.replace_data() for k, v in self.named_buffers()}
+        return parameters, buffers
+
+    def named_parameters(self, prefix: str = '', requires_grad: bool = True):
+        for key, value in self.__dict__.items():
+            if isinstance(value, Module):
+                for sub_key, sub_value in value.named_parameters(prefix=key + '.', requires_grad=requires_grad):
+                    yield prefix + sub_key, sub_value
+            elif isinstance(value, Parameter) and value.requires_grad == requires_grad:
+                yield prefix + key, value
+
+    def named_modules(self, prefix: str = ''):
+        pass
+
+    def named_buffers(self, prefix: str = ''):
+        return self.named_parameters(prefix=prefix, requires_grad=False)
+
+    def _named_attributes(self, classes):
+        for key, value in self.__dict__.items():
+            if isinstance(value, Module):
+                pass
+
