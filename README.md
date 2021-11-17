@@ -27,88 +27,44 @@ pip install git+https://github.com/SunDoge/stave.git
 A module is a struct (dataclass in python). All attributes must be defined explicitly.
 
 ```python
-from stave import nn, differentiable
-from jax import np, jit
+from stave import nn
+import stave.nn.functional as F
 
-@differentiable
-class Linear(nn.Module):
-    weight: differentiable
-    bias: differentiable
+class MLP(nn.Module):
 
-    @classmethod
-    def new(cls, in_features, out_features):
-        weight = np.empty([out_features, in_features])
-        bias = np.empty([out_features])
-        return cls(weight, bias)
+    def __init__(self, in_features: int, hidden_dim: int, out_features: int) -> None:
+        super().__init__()
+        self.linear1 = nn.Seq(
+            [nn.Dense(in_features, hidden_dim), nn.BiasAdd(hidden_dim)])
+        self.linear2 = nn.Seq(
+            [nn.Dense(hidden_dim, out_features), nn.BiasAdd(out_features)])
 
-    @jit
-    def forward(self, x):
-        return np.dot(x, self.weight) + self.bias
+        # self.linear1 = nn.Dense(in_features, hidden_dim)
+        # self.linear2 = nn.Dense(hidden_dim, out_features)
+
+    def forward(self, x: DeviceArray) -> DeviceArray:
+        x = self.linear1.forward(x)
+        x = F.relu(x)
+        x = self.linear2.forward(x)
+        return x
 ```
 
-We use `differentiable` to mark the parameters. Unfortunately, we don't have macro of decorator for attribute in python, so I have to use the annotation, which is not a optimal design.
-
-`@differetiable` will register your module automatically so that it can be used in `jax.jit` and `jax.grad`.
-
-Here, we use `def new(cls, *args, **kwargs)` to create a module. The method name may change in the future. I choose `new` because of `Rust` and `Go`.
-
-The computation happens in `forward` function. Maybe I'll use `__call__` function in the future for better type hint.
 
 ### Model
 
-Model is a combination of modules.
+`Model` is a container for `parameters`, `buffers` and `pure_forward` function.
 
 ```python
-from stave import nn, differentiable
-from jax import np, jit
 
-@differentiable
-class Model(nn.Module):
-    linear1: nn.Linear
-    linear2: nn.Linear
-
-    @classmethod
-    def new(cls, in_features, out_features, hidden_dim):
-        linear1 = nn.Linear.new(in_features, hidden_dim)
-        linear2 = nn.Linear.new(hidden_dim, out_features)
-        return cls(linear1, linear2)
-
-    @jit
-    def forward(self, x):
-        out = self.linear1(x)
-        out = self.linear2(out)
-        return out
 ```
-
-Make sure you write correct annotations, because the `differentiable` depends on them.
 
 ### Gradient
 
 To get the gradient of the model, we need to create a wrapper function, due to the design of `jax.grad`.
 
 ```python
-import jax
-from jax import np
-from stave import nn
-
-def loss_fn(output, target):
-    return (output - target) ** 2
-
-def loss_wrapper(model, input, target):
-    output = model(input)
-    L = loss_fn(output, input)
-    return L
-
-dloss = jax.jit(jax.grad(loss_wrapper))
-
-model = nn.Linear.new(2, 4)
-input = np.ones((32, 2))
-label = np.ones((32,))
-
-dmodel = dloss(model, input, label)
 ```
 
-`dmodel` is an instance of model, but with all parameters replaced by their gradients.
 
 ### Optimizer
 
